@@ -16,7 +16,7 @@ from .base import BaseCollector, EarningsResult
 
 class RepocketCollector(BaseCollector):
     platform = "repocket"
-    _BASE = "https://api.repocket.co"
+    _BASE = "https://api.repocket.com"
 
     def __init__(self):
         self._api_key = os.getenv("REPOCKET_API_KEY", "")
@@ -30,15 +30,16 @@ class RepocketCollector(BaseCollector):
         try:
             async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
                 headers = {
-                    "auth-token": self._api_key,
+                    "Auth-Token": self._api_key,
                     "accept": "application/json, text/plain, */*",
-                    "origin": "https://app.repocket.co",
-                    "referer": "https://app.repocket.co/",
+                    "origin": "https://repocket.com",
+                    "referer": "https://repocket.com/",
                     "device-os": "web",
-                    "User-Agent": "Mozilla/5.0",
+                    "x-app-version": "web",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0",
                 }
                 r = await client.get(
-                    f"{self._BASE}/api/reports/current?withReferralBonusesFix=true",
+                    f"{self._BASE}/api/reports/current",
                     headers=headers,
                 )
                 if r.status_code == 401:
