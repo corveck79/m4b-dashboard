@@ -5,7 +5,7 @@ from .base import BaseCollector, EarningsResult
 
 class BitpingCollector(BaseCollector):
     platform = "bitping"
-    _BASE = "https://app.bitping.com/api"
+    _BASE = "https://api.bitping.com/v2"
 
     def __init__(self):
         self._email = os.getenv("BITPING_EMAIL", "")
@@ -17,7 +17,7 @@ class BitpingCollector(BaseCollector):
             return False
         try:
             r = await client.post(
-                f"{self._BASE}/auth/login",
+                f"{self._BASE}/users/login",
                 json={"email": self._email, "password": self._password},
                 headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"},
                 timeout=15,
@@ -31,7 +31,7 @@ class BitpingCollector(BaseCollector):
             return False
 
     async def collect(self) -> EarningsResult:
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
             if not self._token:
                 ok = await self._login(client)
                 if not ok:
@@ -43,17 +43,22 @@ class BitpingCollector(BaseCollector):
                 "Accept": "application/json",
             }
             try:
-                r = await client.get(f"{self._BASE}/user/earnings", headers=headers, timeout=15)
-                if r.status_code == 401:
-                    self._token = None
-                    ok = await self._login(client)
-                    if not ok:
-                        return EarningsResult(self.platform, 0, error="Re-login failed")
-                    headers["Authorization"] = f"Bearer {self._token}"
-                    r = await client.get(f"{self._BASE}/user/earnings", headers=headers, timeout=15)
-                if not r.is_success:
+                # Try multiple known endpoint paths for node operator earnings
+                data = None
+                for path in ["/nodes/earnings", "/user/earnings", "/earnings", "/nodes/balance"]:
+                    r = await client.get(f"{self._BASE}{path}", headers=headers, timeout=15)
+                    if r.status_code == 401:
+                        self._token = None
+                        ok = await self._login(client)
+                        if not ok:
+                            return EarningsResult(self.platform, 0, error="Re-login failed")
+                        headers["Authorization"] = f"Bearer {self._token}"
+                        r = await client.get(f"{self._BASE}{path}", headers=headers, timeout=15)
+                    if r.is_success:
+                        data = r.json()
+                        break
+                if data is None:
                     return EarningsResult(self.platform, 0, error=f"HTTP {r.status_code}")
-                data = r.json()
                 balance = float(
                     data.get("balance", data.get("earnings", data.get("total", 0)))
                 )

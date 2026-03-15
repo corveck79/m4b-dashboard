@@ -15,18 +15,20 @@ class ProxyRackCollector(BaseCollector):
             return EarningsResult(self.platform, 0, error="PROXYRACK_API_KEY not set")
         try:
             async with httpx.AsyncClient(timeout=30) as client:
-                r = await client.get(
-                    f"{self._BASE}/user/earnings",
-                    headers={
-                        "api_key": self._api_key,
-                        "User-Agent": "Mozilla/5.0",
-                        "Accept": "application/json",
-                    },
-                )
-                if not r.is_success:
+                headers = {
+                    "api_key": self._api_key,
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "application/json",
+                }
+                # Try multiple known endpoint paths
+                data = None
+                for path in ["/user/earnings", "/earnings", "/user", "/stats"]:
+                    r = await client.get(f"{self._BASE}{path}", headers=headers)
+                    if r.is_success:
+                        data = r.json()
+                        break
+                if data is None:
                     return EarningsResult(self.platform, 0, error=f"HTTP {r.status_code}")
-                data = r.json()
-                # Response may vary: {"earnings": 0.123} or {"balance": 0.123}
                 balance = float(
                     data.get("earnings", data.get("balance", data.get("total", 0)))
                 )

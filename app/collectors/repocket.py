@@ -9,7 +9,7 @@ from .base import BaseCollector, EarningsResult
 
 class RepocketCollector(BaseCollector):
     platform = "repocket"
-    _BASE = "https://app.repocket.co/api"  # TODO: confirm via F12
+    _BASE = "https://repocket.com/api"
 
     def __init__(self):
         self._api_key = os.getenv("REPOCKET_API_KEY", "")
@@ -19,9 +19,9 @@ class RepocketCollector(BaseCollector):
         if not self._api_key:
             return EarningsResult(self.platform, 0, error="REPOCKET_API_KEY not set")
         try:
-            async with httpx.AsyncClient(timeout=30) as client:
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
                 r = await client.get(
-                    f"{self._BASE}/earning",  # TODO: confirm endpoint via F12
+                    f"{self._BASE}/earning",
                     headers={
                         "Authorization": f"Bearer {self._api_key}",
                         "User-Agent": "Mozilla/5.0",

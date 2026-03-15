@@ -5,7 +5,7 @@ from .base import BaseCollector, EarningsResult
 
 class EarnfmCollector(BaseCollector):
     platform = "earnfm"
-    _BASE = "https://earnfm.com/api"
+    _BASE = "https://earn.fm/api"
 
     def __init__(self):
         self._api_key = os.getenv("EARNFM_API_KEY", "")
