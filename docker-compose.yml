@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  m4b-dashboard:
+    build: .
+    container_name: m4b-dashboard
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    volumes:
+      # Persistent SQLite database
+      - /volume1/docker/m4b-dashboard/data:/data
+      # Docker socket for container monitoring
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    env_file:
+      - .env
+    environment:
+      - DB_PATH=/data/m4b_dashboard.db
+    networks:
+      - m4b-net
+
+networks:
+  m4b-net:
+    external: true
+    # M4B stack network — controleer met: docker network ls | grep -i m4b
+    # Typisch: MIES_NAS_m4b_network of m4b_official_default
+    name: money4band_default

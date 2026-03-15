@@ -1,0 +1,33 @@
+# Secrets — nooit committen
+.env
+*.env
+
+# One-time patch scripts met hardcoded tokens
+patch_*.sh
+nas_setup.sh
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Data
+data/
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp

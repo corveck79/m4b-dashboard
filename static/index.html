@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M4B Earnings Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --card2: #21253a;
+      --border: #2a2f45;
+      --accent: #6c8fff;
+      --green: #2ecc71;
+      --yellow: #f1c40f;
+      --red: #e74c3c;
+      --text: #e0e4f0;
+      --muted: #7a8199;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 14px; }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 18px; font-weight: 700; letter-spacing: .5px; color: var(--accent); }
+    .last-update { font-size: 12px; color: var(--muted); }
+    .refresh-btn {
+      background: var(--accent); border: none; color: #fff; padding: 6px 14px;
+      border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+      transition: opacity .2s;
+    }
+    .refresh-btn:hover { opacity: .8; }
+    .refresh-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    main { padding: 20px 24px; max-width: 1400px; margin: 0 auto; }
+
+    /* ── Summary cards ───────────────────────────────────────── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .card-label { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 6px; }
+    .card-value { font-size: 26px; font-weight: 700; color: var(--text); }
+    .card-value.green { color: var(--green); }
+    .card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Period tabs ─────────────────────────────────────────── */
+    .period-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+    .period-tab {
+      background: var(--card2); border: 1px solid var(--border); color: var(--muted);
+      padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+      transition: all .15s;
+    }
+    .period-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+    /* ── Charts ──────────────────────────────────────────────── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+    .chart-title { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: .6px; }
+    .chart-wrap { position: relative; height: 240px; }
+
+    /* ── Container table ─────────────────────────────────────── */
+    .section-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    tr:last-child td { border-bottom: none; }
+    .status-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;
+    }
+    .dot-running { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot-exited, .dot-error { background: var(--red); }
+    .dot-not_found { background: var(--muted); }
+    .dot-other { background: var(--yellow); }
+
+    /* ── Error banner ────────────────────────────────────────── */
+    .error-banner {
+      background: rgba(231,76,60,.15); border: 1px solid rgba(231,76,60,.4);
+      border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #f5a89a;
+      display: none;
+    }
+    .error-banner.visible { display: block; }
+
+    /* ── Spinner ─────────────────────────────────────────────── */
+    .spinner { display: none; width: 16px; height: 16px; border: 2px solid #fff3; border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; margin-left: 8px; vertical-align: middle; }
+    .spinner.active { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Settings button ─────────────────────────────────────── */
+    .settings-btn {
+      background: var(--card2); border: 1px solid var(--border); color: var(--muted);
+      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 16px;
+      transition: all .2s; line-height: 1;
+    }
+    .settings-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Settings modal ──────────────────────────────────────── */
+    .settings-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65);
+      z-index: 1000; align-items: center; justify-content: center;
+    }
+    .settings-overlay.open { display: flex; }
+    .settings-modal {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      width: 780px; max-width: 96vw; max-height: 88vh;
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .settings-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .settings-header h2 { font-size: 16px; font-weight: 700; color: var(--accent); }
+    .settings-close {
+      background: none; border: none; color: var(--muted); font-size: 20px;
+      cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: 4px;
+    }
+    .settings-close:hover { color: var(--text); background: var(--card2); }
+    .settings-body {
+      display: flex; flex: 1; overflow: hidden;
+    }
+    .settings-sidebar {
+      width: 190px; border-right: 1px solid var(--border);
+      padding: 12px 0; overflow-y: auto; flex-shrink: 0;
+    }
+    .settings-sidebar-item {
+      padding: 9px 18px; cursor: pointer; font-size: 13px; color: var(--muted);
+      transition: all .15s; display: flex; align-items: center; gap: 8px;
+      border-left: 3px solid transparent;
+    }
+    .settings-sidebar-item:hover { background: var(--card2); color: var(--text); }
+    .settings-sidebar-item.active { background: var(--card2); color: var(--text); border-left-color: var(--accent); font-weight: 600; }
+    .settings-sidebar-divider { height: 1px; background: var(--border); margin: 8px 12px; }
+    .settings-content { flex: 1; padding: 20px 24px; overflow-y: auto; }
+    .settings-platform-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 18px; }
+    .settings-field { margin-bottom: 16px; }
+    .settings-field label {
+      display: block; font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px;
+    }
+    .settings-field .token-badge {
+      display: inline-block; font-size: 10px; background: rgba(241,196,15,.15);
+      color: var(--yellow); border: 1px solid rgba(241,196,15,.3);
+      border-radius: 4px; padding: 1px 5px; margin-left: 6px;
+      text-transform: none; letter-spacing: 0; font-weight: 700;
+    }
+    .settings-input-wrap { position: relative; }
+    .settings-field input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 36px 8px 10px; border-radius: 6px;
+      font-size: 13px; font-family: monospace; transition: border-color .15s;
+    }
+    .settings-field input:focus { outline: none; border-color: var(--accent); }
+    .settings-field input.normal { font-family: 'Segoe UI', sans-serif; }
+    .toggle-pw {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px;
+      padding: 2px 4px;
+    }
+    .toggle-pw:hover { color: var(--text); }
+    .field-hint {
+      font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5;
+    }
+    .field-hint strong { color: #a0aec0; }
+    .settings-footer {
+      padding: 14px 24px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .settings-save {
+      background: var(--accent); border: none; color: #fff; padding: 8px 22px;
+      border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;
+      transition: opacity .2s;
+    }
+    .settings-save:hover { opacity: .85; }
+    .settings-save:disabled { opacity: .4; cursor: not-allowed; }
+    .settings-toast {
+      font-size: 13px; padding: 6px 14px; border-radius: 6px;
+      opacity: 0; transition: opacity .3s;
+    }
+    .settings-toast.ok { background: rgba(46,204,113,.15); color: var(--green); border: 1px solid rgba(46,204,113,.3); opacity: 1; }
+    .settings-toast.err { background: rgba(231,76,60,.15); color: #f5a89a; border: 1px solid rgba(231,76,60,.3); opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>&#9881; M4B Earnings Dashboard</h1>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="last-update" id="lastUpdate">Loading...</span>
+    <button class="refresh-btn" id="refreshBtn" onclick="triggerCollect()">
+      Collect Now <span class="spinner" id="spinner"></span>
+    </button>
+    <button class="settings-btn" onclick="openSettings()" title="Instellingen">&#9881;</button>
+  </div>
+</header>
+
+<!-- Settings modal -->
+<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-modal">
+    <div class="settings-header">
+      <h2>&#9881; Instellingen</h2>
+      <button class="settings-close" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-sidebar" id="settingsSidebar">
+        <!-- injected by JS -->
+      </div>
+      <div class="settings-content" id="settingsContent">
+        <!-- injected by JS -->
+      </div>
+    </div>
+    <div class="settings-footer">
+      <div class="settings-toast" id="settingsToast"></div>
+      <button class="settings-save" id="settingsSaveBtn" onclick="saveSettings()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- Error banner -->
+  <div class="error-banner" id="errorBanner"></div>
+
+  <!-- Summary cards -->
+  <div class="summary-grid" id="summaryGrid">
+    <div class="card">
+      <div class="card-label">Total Balance</div>
+      <div class="card-value green" id="totalBalance">--</div>
+      <div class="card-sub">across all platforms</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Earned Today</div>
+      <div class="card-value" id="totalToday">--</div>
+      <div class="card-sub">estimated delta</div>
+    </div>
+    <!-- Per-platform cards injected here -->
+  </div>
+
+  <!-- Period selector -->
+  <div class="period-tabs">
+    <button class="period-tab active" onclick="setPeriod('day', this)">Day</button>
+    <button class="period-tab" onclick="setPeriod('week', this)">Week</button>
+    <button class="period-tab" onclick="setPeriod('month', this)">Month</button>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Earnings per Platform ($)</div>
+      <div class="chart-wrap"><canvas id="earningsChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Bandwidth Usage (MB)</div>
+      <div class="chart-wrap"><canvas id="bandwidthChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Container status -->
+  <div class="chart-card">
+    <div class="chart-title">Container Status</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Platform</th>
+          <th>Container</th>
+          <th>Status</th>
+          <th>CPU %</th>
+          <th>Memory (MB)</th>
+          <th>Last Seen</th>
+        </tr>
+      </thead>
+      <tbody id="containerTable">
+        <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px;">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const PLATFORM_COLORS = {
+  honeygain:     '#f39c12',
+  earnapp:       '#3498db',
+  iproyal:       '#9b59b6',
+  packetstream:  '#1abc9c',
+  traffmonetizer:'#e74c3c',
+};
+const PLATFORM_LABELS = {
+  honeygain:     'Honeygain',
+  earnapp:       'EarnApp',
+  iproyal:       'IPRoyal',
+  packetstream:  'PacketStream',
+  traffmonetizer:'Traffmonetizer',
+};
+
+let currentPeriod = 'week';
+let earningsChartInst = null;
+let bandwidthChartInst = null;
+
+// ── Chart defaults ────────────────────────────────────────────
+Chart.defaults.color = '#7a8199';
+Chart.defaults.borderColor = '#2a2f45';
+Chart.defaults.font.family = "'Segoe UI', sans-serif";
+
+// ── Helpers ───────────────────────────────────────────────────
+const fmt$ = v => '$' + parseFloat(v || 0).toFixed(4);
+const fmtMB = bytes => (bytes / 1048576).toFixed(1) + ' MB';
+const fmtDate = s => s.slice(5); // MM-DD from YYYY-MM-DD
+
+function groupByPlatformDate(rows) {
+  // Returns { platform: { date: value } }
+  const map = {};
+  for (const r of rows) {
+    if (!map[r.platform]) map[r.platform] = {};
+    map[r.platform][r.date] = r;
+  }
+  return map;
+}
+
+function allDates(rows) {
+  return [...new Set(rows.map(r => r.date))].sort();
+}
+
+// ── Chart builder ─────────────────────────────────────────────
+function buildEarningsChart(rows) {
+  const dates = allDates(rows);
+  const byPlatform = groupByPlatformDate(rows);
+  const platforms = Object.keys(byPlatform);
+
+  const datasets = platforms.map(p => ({
+    label: PLATFORM_LABELS[p] || p,
+    data: dates.map(d => byPlatform[p][d]?.daily_delta ?? 0),
+    backgroundColor: PLATFORM_COLORS[p] || '#888',
+    borderRadius: 4,
+    borderSkipped: false,
+  }));
+
+  if (earningsChartInst) earningsChartInst.destroy();
+  earningsChartInst = new Chart(document.getElementById('earningsChart'), {
+    type: 'bar',
+    data: { labels: dates.map(fmtDate), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, ticks: { callback: v => '$' + v.toFixed(3) } },
+      },
+    },
+  });
+}
+
+function buildBandwidthChart(rows) {
+  const dates = allDates(rows);
+  const byPlatform = groupByPlatformDate(rows);
+  const platforms = Object.keys(byPlatform);
+
+  const datasets = platforms.map(p => ({
+    label: PLATFORM_LABELS[p] || p,
+    data: dates.map(d => {
+      const r = byPlatform[p][d];
+      return r ? ((r.bytes_uploaded + r.bytes_downloaded) / 1048576) : 0;
+    }),
+    backgroundColor: PLATFORM_COLORS[p] || '#888',
+    borderRadius: 4,
+    borderSkipped: false,
+  }));
+
+  if (bandwidthChartInst) bandwidthChartInst.destroy();
+  bandwidthChartInst = new Chart(document.getElementById('bandwidthChart'), {
+    type: 'bar',
+    data: { labels: dates.map(fmtDate), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, ticks: { callback: v => v.toFixed(0) + ' MB' } },
+      },
+    },
+  });
+}
+
+// ── Summary cards ─────────────────────────────────────────────
+function renderSummary(data) {
+  document.getElementById('totalBalance').textContent = fmt$(data.total_balance);
+  document.getElementById('totalToday').textContent = fmt$(data.total_today);
+  document.getElementById('lastUpdate').textContent = 'Last collect: ' + (data.last_collect || '--');
+
+  // Collect errors
+  const errors = data.collect_errors || {};
+  const errKeys = Object.keys(errors);
+  const banner = document.getElementById('errorBanner');
+  if (errKeys.length) {
+    banner.innerHTML = '<strong>Collection errors:</strong> ' + errKeys.map(k => `<span>${PLATFORM_LABELS[k]||k}: ${errors[k]}</span>`).join(' &nbsp;|&nbsp; ');
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+
+  // Platform cards (remove old ones first)
+  document.querySelectorAll('.platform-card').forEach(el => el.remove());
+  const grid = document.getElementById('summaryGrid');
+  for (const p of data.platforms) {
+    const card = document.createElement('div');
+    card.className = 'card platform-card';
+    const color = PLATFORM_COLORS[p.platform] || '#888';
+    card.innerHTML = `
+      <div class="card-label" style="color:${color}">${PLATFORM_LABELS[p.platform] || p.platform}</div>
+      <div class="card-value">${fmt$(p.balance)}</div>
+      <div class="card-sub">+${fmt$(p.daily_delta)} today</div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+// ── Container table ───────────────────────────────────────────
+function renderContainers(rows) {
+  const tbody = document.getElementById('containerTable');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px;">No container data yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const dotClass = r.status === 'running' ? 'dot-running'
+                   : r.status === 'not_found' ? 'dot-not_found'
+                   : r.status === 'exited' ? 'dot-exited'
+                   : 'dot-other';
+    const ts = r.timestamp ? r.timestamp.slice(0, 16).replace('T', ' ') : '--';
+    return `<tr>
+      <td><strong style="color:${PLATFORM_COLORS[r.platform]||'#888'}">${PLATFORM_LABELS[r.platform]||r.platform}</strong></td>
+      <td style="font-family:monospace;color:var(--muted)">${r.container_name}</td>
+      <td><span class="status-dot ${dotClass}"></span>${r.status}</td>
+      <td>${r.cpu_percent ?? '--'}%</td>
+      <td>${r.memory_mb ?? '--'}</td>
+      <td style="color:var(--muted)">${ts}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Data loading ──────────────────────────────────────────────
+async function loadAll() {
+  try {
+    const [summary, earnings, bandwidth, containers] = await Promise.all([
+      fetch('/api/summary').then(r => r.json()),
+      fetch(`/api/earnings?period=${currentPeriod}`).then(r => r.json()),
+      fetch(`/api/bandwidth?period=${currentPeriod}`).then(r => r.json()),
+      fetch('/api/containers').then(r => r.json()),
+    ]);
+    renderSummary(summary);
+    buildEarningsChart(earnings);
+    buildBandwidthChart(bandwidth);
+    renderContainers(containers);
+  } catch (e) {
+    console.error('Load error', e);
+    document.getElementById('errorBanner').textContent = 'Failed to load data: ' + e.message;
+    document.getElementById('errorBanner').classList.add('visible');
+  }
+}
+
+// ── Period switch ─────────────────────────────────────────────
+function setPeriod(period, btn) {
+  currentPeriod = period;
+  document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadAll();
+}
+
+// ── Manual collect trigger ────────────────────────────────────
+async function triggerCollect() {
+  const btn = document.getElementById('refreshBtn');
+  const spinner = document.getElementById('spinner');
+  btn.disabled = true;
+  spinner.classList.add('active');
+  try {
+    await fetch('/api/collect', { method: 'POST' });
+    // Wait a few seconds for collection to run then reload
+    setTimeout(() => { loadAll(); btn.disabled = false; spinner.classList.remove('active'); }, 5000);
+  } catch (e) {
+    btn.disabled = false;
+    spinner.classList.remove('active');
+  }
+}
+
+// ── Auto-refresh every 5 minutes ──────────────────────────────
+loadAll();
+setInterval(loadAll, 5 * 60 * 1000);
+
+// ══════════════════════════════════════════════════════════════
+// Settings modal
+// ══════════════════════════════════════════════════════════════
+
+const SETTINGS_PLATFORMS = [
+  {
+    id: 'honeygain',
+    label: 'Honeygain',
+    color: '#f39c12',
+    fields: [
+      { key: 'HONEYGAIN_EMAIL',    label: 'Email',          type: 'email',    hint: '' },
+      { key: 'HONEYGAIN_PASSWORD', label: 'Wachtwoord',     type: 'password', hint: '' },
+      { key: 'CONTAINER_HONEYGAIN',label: 'Container naam', type: 'text',     hint: 'Naam van de Docker container (bijv. MIES_NAS_honeygain)' },
+    ],
+  },
+  {
+    id: 'earnapp',
+    label: 'EarnApp',
+    color: '#3498db',
+    fields: [
+      { key: 'EARNAPP_BRD_SESS_ID',         label: 'BRD Session ID', type: 'text', token: true,
+        hint: '&#128203; <strong>Hoe vinden:</strong> F12 &rarr; Application &rarr; Cookies &rarr; earnapp.com &rarr; <code>brd_sess_id</code>. Verloopt na weken.' },
+      { key: 'EARNAPP_FALCON_ID',            label: 'Falcon ID',          type: 'text', hint: '' },
+      { key: 'EARNAPP_OAUTH_REFRESH_TOKEN',  label: 'OAuth Refresh Token', type: 'text',
+        hint: '&#128203; <strong>Hoe vinden:</strong> F12 &rarr; Application &rarr; Cookies &rarr; earnapp.com &rarr; <code>oauth-refresh-token</code>' },
+      { key: 'CONTAINER_EARNAPP', label: 'Container naam', type: 'text', hint: '' },
+    ],
+  },
+  {
+    id: 'iproyal',
+    label: 'IPRoyal',
+    color: '#9b59b6',
+    fields: [
+      { key: 'IPROYAL_EMAIL',    label: 'Email',          type: 'email',    hint: '' },
+      { key: 'IPROYAL_PASSWORD', label: 'Wachtwoord',     type: 'password', hint: '' },
+      { key: 'CONTAINER_IPROYAL',label: 'Container naam', type: 'text',     hint: '' },
+    ],
+  },
+  {
+    id: 'packetstream',
+    label: 'PacketStream',
+    color: '#1abc9c',
+    fields: [
+      { key: 'PACKETSTREAM_JWT', label: 'Auth JWT (Cookie)', type: 'text', token: true,
+        hint: '&#128203; <strong>Hoe vinden:</strong> F12 &rarr; Application &rarr; Cookies &rarr; app.packetstream.io &rarr; <code>auth</code>. Lijkt geen expiry te hebben.' },
+      { key: 'PACKETSTREAM_CID',      label: 'CID',            type: 'text',     hint: '' },
+      { key: 'PACKETSTREAM_EMAIL',    label: 'Email',          type: 'email',    hint: '' },
+      { key: 'PACKETSTREAM_PASSWORD', label: 'Wachtwoord',     type: 'password', hint: '' },
+      { key: 'CONTAINER_PACKETSTREAM',label: 'Container naam', type: 'text',     hint: '' },
+    ],
+  },
+  {
+    id: 'traffmonetizer',
+    label: 'Traffmonetizer',
+    color: '#e74c3c',
+    fields: [
+      { key: 'TRAFFMONETIZER_JWT', label: 'JWT Token', type: 'text', token: true,
+        hint: '&#128203; <strong>Hoe vinden:</strong> F12 &rarr; Application &rarr; Local Storage &rarr; app.traffmonetizer.com &rarr; <code>token</code>. Verloopt na ~7 dagen.' },
+      { key: 'TRAFFMONETIZER_EMAIL',    label: 'Email',          type: 'email',    hint: '' },
+      { key: 'TRAFFMONETIZER_PASSWORD', label: 'Wachtwoord',     type: 'password', hint: '' },
+      { key: 'CONTAINER_TRAFFMONETIZER',label: 'Container naam', type: 'text',     hint: '' },
+    ],
+  },
+];
+
+const SETTINGS_GENERAL = {
+  id: 'general',
+  label: 'Algemeen',
+  fields: [
+    { key: 'COLLECT_INTERVAL_MINUTES', label: 'Collect interval (minuten)', type: 'number',
+      hint: 'Hoe vaak data opgehaald wordt. Herstart container na wijziging.' },
+  ],
+};
+
+let _settingsData = {};
+let _activePlatform = 'honeygain';
+
+async function openSettings() {
+  document.getElementById('settingsOverlay').classList.add('open');
+  document.getElementById('settingsSaveBtn').disabled = true;
+  _settingsData = {};
+
+  try {
+    const r = await fetch('/api/settings');
+    _settingsData = await r.json();
+  } catch (e) {
+    showSettingsToast('Fout bij laden: ' + e.message, true);
+  }
+
+  renderSidebar();
+  selectPlatform(_activePlatform);
+  document.getElementById('settingsSaveBtn').disabled = false;
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+  clearSettingsToast();
+}
+
+function renderSidebar() {
+  const sidebar = document.getElementById('settingsSidebar');
+  sidebar.innerHTML = SETTINGS_PLATFORMS.map(p => `
+    <div class="settings-sidebar-item ${p.id === _activePlatform ? 'active' : ''}"
+         onclick="selectPlatform('${p.id}')" id="sidebarItem-${p.id}">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0"></span>
+      ${p.label}
+    </div>
+  `).join('') + `
+    <div class="settings-sidebar-divider"></div>
+    <div class="settings-sidebar-item ${_activePlatform === 'general' ? 'active' : ''}"
+         onclick="selectPlatform('general')" id="sidebarItem-general">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0"></span>
+      Algemeen
+    </div>
+  `;
+}
+
+function selectPlatform(id) {
+  _activePlatform = id;
+
+  // Update sidebar active state
+  document.querySelectorAll('.settings-sidebar-item').forEach(el => el.classList.remove('active'));
+  const sidebarEl = document.getElementById('sidebarItem-' + id);
+  if (sidebarEl) sidebarEl.classList.add('active');
+
+  const platform = id === 'general'
+    ? SETTINGS_GENERAL
+    : SETTINGS_PLATFORMS.find(p => p.id === id);
+  if (!platform) return;
+
+  const content = document.getElementById('settingsContent');
+  content.innerHTML = `
+    <div class="settings-platform-title" style="color:${platform.color || 'var(--text)'}">${platform.label}</div>
+    ${platform.fields.map(f => renderField(f)).join('')}
+  `;
+}
+
+function renderField(f) {
+  const val = (_settingsData[f.key] || '').replace(/"/g, '&quot;');
+  const tokenBadge = f.token ? '<span class="token-badge">&#9888; token</span>' : '';
+  const isPassword = f.type === 'password';
+  const inputType = isPassword ? 'password' : (f.type === 'number' ? 'number' : 'text');
+  const mono = (f.type === 'text' && !f.key.includes('CONTAINER') && !f.key.includes('CID')) ? '' : 'class="normal"';
+  const toggleBtn = isPassword
+    ? `<button class="toggle-pw" type="button" onclick="togglePw('${f.key}')" title="Toon/verberg">&#128065;</button>`
+    : '';
+  const hint = f.hint ? `<div class="field-hint">${f.hint}</div>` : '';
+
+  return `
+    <div class="settings-field">
+      <label>${f.label}${tokenBadge}</label>
+      <div class="settings-input-wrap">
+        <input type="${inputType}" id="field-${f.key}" name="${f.key}" value="${val}" ${mono} autocomplete="off" spellcheck="false">
+        ${toggleBtn}
+      </div>
+      ${hint}
+    </div>
+  `;
+}
+
+function togglePw(key) {
+  const inp = document.getElementById('field-' + key);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function saveSettings() {
+  const btn = document.getElementById('settingsSaveBtn');
+  btn.disabled = true;
+  clearSettingsToast();
+
+  // Collect all visible inputs
+  const inputs = document.querySelectorAll('#settingsContent input');
+  const payload = {};
+  inputs.forEach(inp => { if (inp.name) payload[inp.name] = inp.value; });
+
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (r.ok) {
+      showSettingsToast('&#10003; Opgeslagen!', false);
+      // Update local cache
+      Object.assign(_settingsData, payload);
+    } else {
+      const t = await r.text();
+      showSettingsToast('Fout: ' + t.slice(0, 80), true);
+    }
+  } catch (e) {
+    showSettingsToast('Netwerkfout: ' + e.message, true);
+  }
+  btn.disabled = false;
+}
+
+function showSettingsToast(msg, isError) {
+  const t = document.getElementById('settingsToast');
+  t.innerHTML = msg;
+  t.className = 'settings-toast ' + (isError ? 'err' : 'ok');
+  if (!isError) setTimeout(clearSettingsToast, 3000);
+}
+function clearSettingsToast() {
+  const t = document.getElementById('settingsToast');
+  t.className = 'settings-toast';
+  t.innerHTML = '';
+}
+</script>
+</body>
+</html>

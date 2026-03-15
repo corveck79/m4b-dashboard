@@ -1,0 +1,12 @@
+# Shell scripts altijd LF (voor Linux/NAS)
+*.sh text eol=lf
+
+# Python en configs LF
+*.py text eol=lf
+*.yml text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.env.example text eol=lf
+.gitignore text eol=lf
