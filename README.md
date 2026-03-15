@@ -20,14 +20,17 @@ A self-hosted monitoring dashboard for [Money4Band](https://github.com/MRColorR/
 
 ## Supported Platforms
 
-| Platform | Earnings | Bandwidth |
-|---|:---:|:---:|
-| Honeygain | ✅ | ✅ |
-| EarnApp | ✅ | ✅ |
-| IPRoyal (Pawns.app) | ✅ | — |
-| PacketStream | ✅ | ✅ |
-| Traffmonetizer | ✅ | — |
-| Repocket | ✅ | — |
+| Platform | Earnings API | Bandwidth | Notes |
+|---|:---:|:---:|---|
+| Honeygain | ✅ | ✅ | Email + password |
+| EarnApp | ✅ | ✅ | Cookie tokens via F12 |
+| IPRoyal (Pawns.app) | ✅ | — | Email + password |
+| PacketStream | ✅ | ✅ | Cookie + CID via F12 |
+| Traffmonetizer | ✅ | — | JWT token via F12 |
+| Repocket | ✅ | — | Email + password (Google OAuth account: set a password via forgot-password) |
+| ProxyRack | ✅ | — | API key from dashboard |
+| EarnFM | ⚠️ | — | No public API for node operators — container monitored only |
+| Bitping | ⚠️ | — | gRPC only, no REST earnings API — container monitored only |
 
 ---
 
@@ -54,10 +57,10 @@ EARNAPP_FALCON_ID=your_falcon_id
 EARNAPP_OAUTH_REFRESH_TOKEN=your_refresh_token
 CONTAINER_EARNAPP=MIES_NAS_earnapp
 
-# IPRoyal
+# IPRoyal (Pawns.app)
 IPROYAL_EMAIL=your@email.com
 IPROYAL_PASSWORD=yourpassword
-CONTAINER_IPROYAL=MIES_NAS_iproyal
+CONTAINER_IPROYAL=MIES_NAS_iproyalpawns
 
 # PacketStream
 PACKETSTREAM_JWT=your_auth_cookie
@@ -72,10 +75,23 @@ TRAFFMONETIZER_EMAIL=your@email.com
 TRAFFMONETIZER_PASSWORD=yourpassword
 CONTAINER_TRAFFMONETIZER=MIES_NAS_traffmonetizer
 
-# Repocket
+# Repocket (Firebase auth — email + password)
 REPOCKET_EMAIL=your@email.com
-REPOCKET_API_KEY=your_api_key_here
+REPOCKET_PASSWORD=yourpassword
 CONTAINER_REPOCKET=MIES_NAS_repocket
+
+# ProxyRack
+PROXYRACK_API_KEY=your_api_key
+PROXYRACK_UUID=your_uuid
+CONTAINER_PROXYRACK=MIES_NAS_proxyrack
+
+# EarnFM (container monitoring only — no earnings API)
+CONTAINER_EARNFM=MIES_NAS_earnfm
+
+# Bitping (container monitoring only — no earnings API)
+BITPING_EMAIL=your@email.com
+BITPING_PASSWORD=yourpassword
+CONTAINER_BITPING=MIES_NAS_bitping
 
 # General
 COLLECT_INTERVAL_MINUTES=15
@@ -118,6 +134,27 @@ Some platforms use short-lived tokens that expire and must be refreshed via the 
 | PacketStream | `auth` cookie | F12 → Application → Cookies → `app.packetstream.io` |
 | Traffmonetizer | `token` | F12 → Application → Local Storage → `app.traffmonetizer.com` |
 
+### Repocket (Google OAuth accounts)
+
+If you signed up via Google, you have no password by default. Set one:
+
+1. Go to [repocket.com](https://repocket.com) → log out
+2. Click **"Forgot password?"** → enter your Gmail address
+3. Follow the reset email → set a new password
+4. Enter email + new password in dashboard Settings
+
+---
+
+## Synology NAS Notes
+
+Synology kernels don't support CPU CFS scheduler. If you see `NanoCPUs can not be set` errors:
+
+```bash
+sed -i '/cpus:/d' docker-compose.yaml
+```
+
+Run this in both `/volume1/docker/m4b-dashboard/` and `/volume1/docker/m4b_official/` if needed.
+
 ---
 
 ## Architecture
@@ -132,11 +169,15 @@ FastAPI (uvicorn)
 └── /api/settings         — GET/POST credentials to .env
 
 Collectors (async, run every N minutes)
-├── HoneygainCollector    — REST API
-├── EarnAppCollector      — REST API
-├── IPRoyalCollector      — REST API (pawns.app)
-├── PacketStreamCollector — REST API
-└── TraffmonetizerCollector — REST API
+├── HoneygainCollector      — REST API (email + password)
+├── EarnAppCollector        — REST API (cookie tokens)
+├── IPRoyalCollector        — REST API (pawns.app, email + password)
+├── PacketStreamCollector   — REST API (cookie + CID)
+├── TraffmonetizerCollector — REST API (JWT)
+├── RepocketCollector       — Firebase auth (email + password)
+├── ProxyRackCollector      — REST API (API key)
+├── EarnfmCollector         — N/A (no node-operator API)
+└── BitpingCollector        — N/A (gRPC only)
 
 Storage: SQLite (aiosqlite)
 Scheduling: APScheduler
@@ -151,11 +192,6 @@ python -m venv .venv
 .venv/Scripts/pip install -r requirements.txt   # Windows
 # or: .venv/bin/pip install -r requirements.txt # Linux/Mac
 
-# Copy live .env and fix DB path for local use
-cp /path/to/live/.env .env
-# Change DB_PATH to local path in .env:
-# DB_PATH=./data/m4b_dashboard.db
-
 mkdir data
 .venv/Scripts/uvicorn app.main:app --host 0.0.0.0 --port 8082 --reload
 ```
@@ -165,10 +201,9 @@ mkdir data
 ## Updating on NAS
 
 ```bash
-bash /volume1/docker/m4b-dashboard/update.sh
+cd /volume1/docker/m4b-dashboard
+git pull && docker compose up -d --build
 ```
-
-The `update.sh` script runs `git pull` + `docker compose up --build -d`.
 
 ---
 
