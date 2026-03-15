@@ -69,7 +69,6 @@ class RepocketCollector(BaseCollector):
                     "returnSecureToken": True,
                     "email": self._email,
                     "password": self._password,
-                    "clientType": "CLIENT_TYPE_WEB",
                 },
                 headers={"Content-Type": "application/json"},
                 timeout=15,
