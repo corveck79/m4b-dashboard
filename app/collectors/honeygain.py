@@ -3,7 +3,7 @@ import os
 from .base import BaseCollector, EarningsResult
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:97.0) Gecko/20100101 Firefox/97.0",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
     "Referer": "https://dashboard.honeygain.com/",
 }
 
@@ -45,7 +45,7 @@ class HoneygainCollector(BaseCollector):
                     "https://dashboard.honeygain.com/api/v1/users/balances",
                     headers=headers, timeout=15
                 )
-                if r.status_code == 401:
+                if r.status_code in (401, 403):
                     self._token = None
                     ok = await self._login(client)
                     if not ok:
