@@ -602,8 +602,8 @@ const SETTINGS_PLATFORMS = [
     label: 'Repocket',
     color: '#27ae60',
     fields: [
-      { key: 'REPOCKET_API_KEY',  label: 'Auth Token',  type: 'text',
-        hint: '&#128203; <strong>Hoe vinden (Google login):</strong> Open <a href="https://app.repocket.co" target="_blank" style="color:var(--accent)">app.repocket.co</a> &rarr; F12 &rarr; Network &rarr; klik een request naar api.repocket.co &rarr; Headers &rarr; kopieer de waarde van <code>auth-token</code>.' },
+      { key: 'REPOCKET_EMAIL',    label: 'Email',       type: 'email',    hint: '' },
+      { key: 'REPOCKET_PASSWORD', label: 'Wachtwoord',  type: 'password', hint: 'Repocket account wachtwoord (token wordt automatisch ververst)' },
       { key: 'CONTAINER_REPOCKET', label: 'Container naam', type: 'text', hint: 'Naam van de Docker container (bijv. MIES_NAS_repocket)' },
     ],
   },
