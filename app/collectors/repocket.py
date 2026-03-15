@@ -1,41 +1,60 @@
+from __future__ import annotations
 import os
 import httpx
 from .base import BaseCollector, EarningsResult
 
-# NOTE: API endpoints are marked TODO — verify via F12 on app.repocket.co
-# after creating an account. Open Network tab, look for requests to
-# /api/earning or similar when the dashboard loads.
+# Auth: Repocket uses Firebase/Google OAuth — no email+password API login available.
+# Users must extract their auth-token JWT from browser (F12 → Network → api.repocket.co request).
+# Set REPOCKET_API_KEY to that JWT value.
+#
+# Confirmed endpoints (source: hibenji/repocket_stats + 0xSums/SVB on GitHub):
+# Reports: GET https://api.repocket.co/api/reports/current?withReferralBonusesFix=true
+#          Header: auth-token: <JWT>
+# The JWT is a Firebase ID token (Google OAuth); it expires after ~1 hour.
+# When it expires, re-extract from browser and update via Settings.
 
 
 class RepocketCollector(BaseCollector):
     platform = "repocket"
-    _BASE = "https://repocket.com/api"
+    _BASE = "https://api.repocket.co"
 
     def __init__(self):
         self._api_key = os.getenv("REPOCKET_API_KEY", "")
-        self._email = os.getenv("REPOCKET_EMAIL", "")
 
     async def collect(self) -> EarningsResult:
         if not self._api_key:
-            return EarningsResult(self.platform, 0, error="REPOCKET_API_KEY not set")
+            return EarningsResult(
+                self.platform, 0,
+                error="REPOCKET_API_KEY not set (extract auth-token from browser F12)"
+            )
         try:
             async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+                headers = {
+                    "auth-token": self._api_key,
+                    "accept": "application/json, text/plain, */*",
+                    "origin": "https://app.repocket.co",
+                    "referer": "https://app.repocket.co/",
+                    "device-os": "web",
+                    "User-Agent": "Mozilla/5.0",
+                }
                 r = await client.get(
-                    f"{self._BASE}/earning",
-                    headers={
-                        "Authorization": f"Bearer {self._api_key}",
-                        "User-Agent": "Mozilla/5.0",
-                        "Accept": "application/json",
-                    },
+                    f"{self._BASE}/api/reports/current?withReferralBonusesFix=true",
+                    headers=headers,
                 )
-                if not r.is_success:
+                if r.status_code == 401:
                     return EarningsResult(
-                        self.platform, 0, error=f"HTTP {r.status_code}"
+                        self.platform, 0,
+                        error="auth-token expired — re-extract from browser F12 and update Settings"
                     )
+                if not r.is_success:
+                    return EarningsResult(self.platform, 0, error=f"HTTP {r.status_code}")
                 data = r.json()
-                # TODO: confirm field name via F12 (could be 'balance', 'amount',
-                # 'total_earnings', etc.)
-                balance = float(data.get("balance", data.get("amount", 0)))
+                balance = float(
+                    data.get("totalEarnings",
+                    data.get("balance",
+                    data.get("amount",
+                    data.get("total", 0))))
+                )
                 return EarningsResult(self.platform, balance)
         except Exception as e:
             return EarningsResult(self.platform, 0, error=str(e))
