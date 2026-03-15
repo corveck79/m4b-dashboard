@@ -608,6 +608,37 @@ const SETTINGS_PLATFORMS = [
       { key: 'CONTAINER_REPOCKET', label: 'Container naam', type: 'text', hint: 'Naam van de Docker container (bijv. MIES_NAS_repocket)' },
     ],
   },
+  {
+    id: 'earnfm',
+    label: 'EarnFM',
+    color: '#e67e22',
+    fields: [
+      { key: 'EARNFM_API_KEY', label: 'API Key', type: 'text',
+        hint: '&#128203; <strong>Hoe vinden:</strong> Inloggen op <a href="https://earnfm.com" target="_blank" style="color:var(--accent)">earnfm.com</a> &rarr; Account &rarr; API Key.' },
+      { key: 'CONTAINER_EARNFM', label: 'Container naam', type: 'text', hint: 'Bijv. MIES_NAS_earnfm' },
+    ],
+  },
+  {
+    id: 'proxyrack',
+    label: 'ProxyRack',
+    color: '#8e44ad',
+    fields: [
+      { key: 'PROXYRACK_API_KEY', label: 'API Key', type: 'text',
+        hint: '&#128203; <strong>Hoe vinden:</strong> Inloggen op <a href="https://peer.proxyrack.com" target="_blank" style="color:var(--accent)">peer.proxyrack.com</a> &rarr; API.' },
+      { key: 'PROXYRACK_UUID', label: 'Device UUID', type: 'text', hint: 'Unieke device identifier (automatisch gegenereerd door M4B).' },
+      { key: 'CONTAINER_PROXYRACK', label: 'Container naam', type: 'text', hint: 'Bijv. MIES_NAS_proxyrack' },
+    ],
+  },
+  {
+    id: 'bitping',
+    label: 'Bitping',
+    color: '#16a085',
+    fields: [
+      { key: 'BITPING_EMAIL',    label: 'Email',      type: 'email',    hint: '' },
+      { key: 'BITPING_PASSWORD', label: 'Wachtwoord', type: 'password', hint: '' },
+      { key: 'CONTAINER_BITPING', label: 'Container naam', type: 'text', hint: 'Bijv. MIES_NAS_bitping' },
+    ],
+  },
 ];
 
 const SETTINGS_GENERAL = {

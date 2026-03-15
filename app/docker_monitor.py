@@ -12,6 +12,10 @@ CONTAINER_MAP = {
     "iproyal": os.getenv("CONTAINER_IPROYAL", "iproyal_pawns"),
     "packetstream": os.getenv("CONTAINER_PACKETSTREAM", "packetstream"),
     "traffmonetizer": os.getenv("CONTAINER_TRAFFMONETIZER", "traffmonetizer"),
+    "repocket": os.getenv("CONTAINER_REPOCKET", "repocket"),
+    "earnfm": os.getenv("CONTAINER_EARNFM", "earnfm"),
+    "proxyrack": os.getenv("CONTAINER_PROXYRACK", "proxyrack"),
+    "bitping": os.getenv("CONTAINER_BITPING", "bitping"),
 }
 
 _executor = ThreadPoolExecutor(max_workers=2)
