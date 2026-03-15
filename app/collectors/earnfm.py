@@ -18,7 +18,7 @@ class EarnfmCollector(BaseCollector):
         try:
             async with httpx.AsyncClient(timeout=30) as client:
                 r = await client.get(
-                    f"{self._BASE}/my_info",
+                    f"{self._BASE}/reseller/my_info",
                     headers={
                         "X-API-KEY": self._api_key,
                         "User-Agent": "Mozilla/5.0",
@@ -28,8 +28,14 @@ class EarnfmCollector(BaseCollector):
                 if not r.is_success:
                     return EarningsResult(self.platform, 0, error=f"HTTP {r.status_code}")
                 data = r.json()
-                # /my_info returns user info; balance field TBC — try common names
-                balance = float(data.get("balance", data.get("earning", data.get("amount", 0))))
+                # Response: {"data": {"sharedDataCenter": N, "residential": N, ...}, "status": 200}
+                # Sum all product balances from the data object
+                payload = data.get("data", data)
+                if isinstance(payload, dict):
+                    numeric_vals = [v for v in payload.values() if isinstance(v, (int, float))]
+                    balance = float(sum(numeric_vals)) if numeric_vals else 0.0
+                else:
+                    balance = float(payload or 0)
                 return EarningsResult(self.platform, balance)
         except Exception as e:
             return EarningsResult(self.platform, 0, error=str(e))
