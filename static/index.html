@@ -254,6 +254,11 @@
       <div class="card-value" id="totalToday">--</div>
       <div class="card-sub">estimated delta</div>
     </div>
+    <div class="card">
+      <div class="card-label">Data Vandaag</div>
+      <div class="card-value" id="totalDataToday">--</div>
+      <div class="card-sub" id="totalDataTodaySub">shared bandwidth</div>
+    </div>
     <!-- Per-platform cards injected here -->
   </div>
 
@@ -372,23 +377,48 @@ function buildEarningsChart(rows) {
 }
 
 function buildBandwidthChart(rows) {
+  if (bandwidthChartInst) bandwidthChartInst.destroy();
+
+  const canvas = document.getElementById('bandwidthChart');
+  const wrap = canvas.parentElement;
+
+  // Verwijder eventueel oud "geen data" bericht
+  const existing = wrap.querySelector('.no-data-msg');
+  if (existing) existing.remove();
+  canvas.style.display = '';
+
+  if (!rows.length) {
+    canvas.style.display = 'none';
+    const msg = document.createElement('div');
+    msg.className = 'no-data-msg';
+    msg.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;flex-direction:column;gap:6px;';
+    msg.innerHTML = '<span style="font-size:24px">📡</span><span>Nog geen bandwidth data</span><span style="font-size:11px">Verschijnt na succesvolle collectie</span>';
+    wrap.appendChild(msg);
+    return;
+  }
+
   const dates = allDates(rows);
   const byPlatform = groupByPlatformDate(rows);
   const platforms = Object.keys(byPlatform);
+
+  // Bepaal eenheid (MB of GB)
+  const totalBytes = rows.reduce((s, r) => s + (r.bytes_uploaded || 0) + (r.bytes_downloaded || 0), 0);
+  const useGB = totalBytes > 1073741824; // > 1 GB
+  const divisor = useGB ? 1073741824 : 1048576;
+  const unit = useGB ? 'GB' : 'MB';
 
   const datasets = platforms.map(p => ({
     label: PLATFORM_LABELS[p] || p,
     data: dates.map(d => {
       const r = byPlatform[p][d];
-      return r ? ((r.bytes_uploaded + r.bytes_downloaded) / 1048576) : 0;
+      return r ? ((r.bytes_uploaded + r.bytes_downloaded) / divisor) : 0;
     }),
     backgroundColor: PLATFORM_COLORS[p] || '#888',
     borderRadius: 4,
     borderSkipped: false,
   }));
 
-  if (bandwidthChartInst) bandwidthChartInst.destroy();
-  bandwidthChartInst = new Chart(document.getElementById('bandwidthChart'), {
+  bandwidthChartInst = new Chart(canvas, {
     type: 'bar',
     data: { labels: dates.map(fmtDate), datasets },
     options: {
@@ -396,7 +426,7 @@ function buildBandwidthChart(rows) {
       plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
       scales: {
         x: { stacked: true, grid: { display: false } },
-        y: { stacked: true, ticks: { callback: v => v.toFixed(0) + ' MB' } },
+        y: { stacked: true, ticks: { callback: v => v.toFixed(1) + ' ' + unit } },
       },
     },
   });
@@ -462,13 +492,15 @@ function renderContainers(rows) {
 // ── Data loading ──────────────────────────────────────────────
 async function loadAll() {
   try {
-    const [summary, earnings, bandwidth, containers] = await Promise.all([
+    const [summary, earnings, bandwidth, bandwidthDay, containers] = await Promise.all([
       fetch('/api/summary').then(r => r.json()),
       fetch(`/api/earnings?period=${currentPeriod}`).then(r => r.json()),
       fetch(`/api/bandwidth?period=${currentPeriod}`).then(r => r.json()),
+      fetch('/api/bandwidth?period=day').then(r => r.json()),
       fetch('/api/containers').then(r => r.json()),
     ]);
     renderSummary(summary);
+    renderDataToday(bandwidthDay);
     buildEarningsChart(earnings);
     buildBandwidthChart(bandwidth);
     renderContainers(containers);
@@ -476,6 +508,26 @@ async function loadAll() {
     console.error('Load error', e);
     document.getElementById('errorBanner').textContent = 'Failed to load data: ' + e.message;
     document.getElementById('errorBanner').classList.add('visible');
+  }
+}
+
+function renderDataToday(rows) {
+  // Sumeer alle bytes van vandaag
+  const totalBytes = rows.reduce((sum, r) => sum + (r.bytes_uploaded || 0) + (r.bytes_downloaded || 0), 0);
+  const el = document.getElementById('totalDataToday');
+  const sub = document.getElementById('totalDataTodaySub');
+  if (totalBytes === 0) {
+    el.textContent = 'geen data';
+    el.style.fontSize = '16px';
+    sub.textContent = 'nog geen bandwidth gemeten';
+  } else if (totalBytes < 1048576) {
+    el.textContent = (totalBytes / 1024).toFixed(1) + ' KB';
+    el.style.fontSize = '';
+    sub.textContent = rows.length + ' platform(s) vandaag';
+  } else {
+    el.textContent = (totalBytes / 1048576).toFixed(1) + ' MB';
+    el.style.fontSize = '';
+    sub.textContent = rows.length + ' platform(s) vandaag';
   }
 }
 
