@@ -4,6 +4,8 @@ A self-hosted monitoring dashboard for [Money4Band](https://github.com/MRColorR/
 
 ![Dashboard preview](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat&logo=fastapi) ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python) ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat&logo=docker)
 
+![Screenshot](docs/screenshot.png)
+
 ---
 
 ## Features
