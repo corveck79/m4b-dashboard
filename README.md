@@ -27,6 +27,7 @@ A self-hosted monitoring dashboard for [Money4Band](https://github.com/MRColorR/
 | IPRoyal (Pawns.app) | ✅ | — |
 | PacketStream | ✅ | ✅ |
 | Traffmonetizer | ✅ | — |
+| Repocket | ✅ | — |
 
 ---
 
@@ -70,6 +71,11 @@ TRAFFMONETIZER_JWT=your_jwt_token
 TRAFFMONETIZER_EMAIL=your@email.com
 TRAFFMONETIZER_PASSWORD=yourpassword
 CONTAINER_TRAFFMONETIZER=MIES_NAS_traffmonetizer
+
+# Repocket
+REPOCKET_EMAIL=your@email.com
+REPOCKET_API_KEY=your_api_key_here
+CONTAINER_REPOCKET=MIES_NAS_repocket
 
 # General
 COLLECT_INTERVAL_MINUTES=15

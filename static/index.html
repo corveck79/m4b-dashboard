@@ -305,6 +305,7 @@ const PLATFORM_COLORS = {
   iproyal:       '#9b59b6',
   packetstream:  '#1abc9c',
   traffmonetizer:'#e74c3c',
+  repocket:      '#27ae60',
 };
 const PLATFORM_LABELS = {
   honeygain:     'Honeygain',
@@ -312,6 +313,7 @@ const PLATFORM_LABELS = {
   iproyal:       'IPRoyal',
   packetstream:  'PacketStream',
   traffmonetizer:'Traffmonetizer',
+  repocket:      'Repocket',
 };
 
 let currentPeriod = 'week';
@@ -593,6 +595,17 @@ const SETTINGS_PLATFORMS = [
       { key: 'TRAFFMONETIZER_EMAIL',    label: 'Email',          type: 'email',    hint: '' },
       { key: 'TRAFFMONETIZER_PASSWORD', label: 'Wachtwoord',     type: 'password', hint: '' },
       { key: 'CONTAINER_TRAFFMONETIZER',label: 'Container naam', type: 'text',     hint: '' },
+    ],
+  },
+  {
+    id: 'repocket',
+    label: 'Repocket',
+    color: '#27ae60',
+    fields: [
+      { key: 'REPOCKET_EMAIL',   label: 'Email',     type: 'email', hint: '' },
+      { key: 'REPOCKET_API_KEY', label: 'API Key',   type: 'text',
+        hint: '&#128203; <strong>Hoe vinden:</strong> Inloggen op <a href="https://app.repocket.co" target="_blank" style="color:var(--accent)">app.repocket.co</a> &rarr; Account &rarr; API Key sectie.' },
+      { key: 'CONTAINER_REPOCKET', label: 'Container naam', type: 'text', hint: 'Naam van de Docker container (bijv. MIES_NAS_repocket)' },
     ],
   },
 ];

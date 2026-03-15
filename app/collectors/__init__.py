@@ -3,6 +3,7 @@ from .earnapp import EarnAppCollector
 from .iproyal import IPRoyalCollector
 from .packetstream import PacketStreamCollector
 from .traffmonetizer import TraffmonetizerCollector
+from .repocket import RepocketCollector
 
 
 def make_collectors():
@@ -12,6 +13,7 @@ def make_collectors():
         IPRoyalCollector(),
         PacketStreamCollector(),
         TraffmonetizerCollector(),
+        RepocketCollector(),
     ]
 
 
