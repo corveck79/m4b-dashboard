@@ -12,6 +12,8 @@ services:
       - /volume1/docker/m4b-dashboard/data:/data
       # Docker socket for container monitoring
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Persistent .env — Settings UI writes here, survives rebuilds
+      - /volume1/docker/m4b-dashboard/.env:/app/.env
     env_file:
       - .env
     environment:
