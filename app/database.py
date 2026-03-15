@@ -62,7 +62,7 @@ async def upsert_earnings(platform: str, balance: float, currency: str = "USD"):
         ) as cursor:
             existing = await cursor.fetchone()
 
-        delta = balance - prev_balance if prev_balance else 0.0
+        delta = balance - prev_balance
 
         if existing:
             await db.execute(
