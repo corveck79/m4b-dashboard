@@ -159,12 +159,9 @@ class RepocketCollector(BaseCollector):
                 if not r.is_success:
                     return EarningsResult(self.platform, 0, error=f"HTTP {r.status_code}")
                 data = r.json()
-                balance = float(
-                    data.get("totalEarnings",
-                    data.get("balance",
-                    data.get("amount",
-                    data.get("total", 0))))
-                )
+                # Repocket returns centsCredited in cents — convert to dollars
+                cents = float(data.get("centsCredited", 0))
+                balance = cents / 100
                 return EarningsResult(self.platform, balance)
             except Exception as e:
                 return EarningsResult(self.platform, 0, error=str(e))
