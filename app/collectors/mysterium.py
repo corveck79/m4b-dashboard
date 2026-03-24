@@ -92,16 +92,11 @@ class MysteriumCollector(BaseCollector):
                         error=f"service-earnings HTTP {r.status_code}"
                     )
                 earnings = r.json()
-                # Earnings are in Wei (1 MYST = 1e18 Wei)
-                total_wei = int(
-                    earnings.get("totalEarnings",
-                    earnings.get("lifetimeBalance",
-                    earnings.get("balance", 0)))
-                )
-                unsettled_wei = int(earnings.get("unsettledBalance", 0))
-                settled_wei = total_wei or unsettled_wei
-
-                myst_balance = settled_wei / 1e18
+                # Response: {total_tokens: {wei: "...", ether: "...", human: "..."}, ...}
+                total_tokens = earnings.get("total_tokens", {})
+                total_wei_str = total_tokens.get("wei", "0") or "0"
+                total_wei = int(total_wei_str)
+                myst_balance = total_wei / 1e18
 
                 # Convert MYST to USD
                 usd_balance = myst_balance
