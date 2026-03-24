@@ -7,6 +7,7 @@ from .repocket import RepocketCollector
 from .earnfm import EarnfmCollector
 from .proxyrack import ProxyRackCollector
 from .bitping import BitpingCollector
+from .mysterium import MysteriumCollector
 
 
 def make_collectors():
@@ -20,6 +21,7 @@ def make_collectors():
         EarnfmCollector(),
         ProxyRackCollector(),
         BitpingCollector(),
+        MysteriumCollector(),
     ]
 
 
