@@ -120,7 +120,7 @@ class PacketStreamCollector(BaseCollector):
 
                 if result is None:
                     return EarningsResult(self.platform, 0,
-                        error="Login failed or dashboard unreachable — check credentials")
+                        error="Login requires CAPTCHA — set PACKETSTREAM_JWT from browser (F12 > Cookies > auth)")
 
                 balance, uploaded = result
                 return EarningsResult(self.platform, balance, bytes_uploaded=uploaded)
