@@ -101,22 +101,25 @@ class PacketStreamCollector(BaseCollector):
             return None
 
     async def collect(self) -> EarningsResult:
-        if not self.jwt:
+        if not self.jwt and not (self.email and self.password):
             return EarningsResult(self.platform, 0,
-                error="PACKETSTREAM_JWT not set — haal op via F12 > Cookies > app.packetstream.io > auth")
+                error="Set PACKETSTREAM_EMAIL + PACKETSTREAM_PASSWORD, or PACKETSTREAM_JWT")
 
         try:
             async with httpx.AsyncClient() as client:
-                result = await self._scrape_balance(client)
+                # Try JWT first if available
+                result = None
+                if self.jwt:
+                    result = await self._scrape_balance(client)
 
-                if result is None:
-                    # JWT verlopen — probeer auto-login
+                # If no JWT or JWT expired, try email/password login
+                if result is None and self.email and self.password:
                     if await self._login(client):
                         result = await self._scrape_balance(client)
 
                 if result is None:
                     return EarningsResult(self.platform, 0,
-                        error="Dashboard ophalen mislukt — vernieuw PACKETSTREAM_JWT via F12 > Cookies")
+                        error="Login failed or dashboard unreachable — check credentials")
 
                 balance, uploaded = result
                 return EarningsResult(self.platform, balance, bytes_uploaded=uploaded)
