@@ -26,12 +26,13 @@ class PacketStreamCollector(BaseCollector):
         if not self.email or not self.password:
             return False
         try:
-            # Haal CSRF token op
+            # Get CSRF token from hidden form field
             r = await client.get(f"{BASE}/login", headers=HEADERS, timeout=15)
-            csrf = r.cookies.get("_csrf", "")
+            m = re.search(r'name=csrf\s+value=([^\s>]+)', r.text)
+            csrf = m.group(1) if m else ""
             r2 = await client.post(
                 f"{BASE}/login",
-                data={"username": self.email, "password": self.password, "_csrf": csrf},
+                data={"username": self.email, "password": self.password, "csrf": csrf},
                 headers={**HEADERS, "Content-Type": "application/x-www-form-urlencoded",
                          "Referer": f"{BASE}/login"},
                 follow_redirects=True,
