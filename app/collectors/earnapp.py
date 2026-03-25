@@ -3,9 +3,9 @@ import os
 from .base import BaseCollector, EarningsResult
 
 # EarnApp auth via brd_sess_id (Bright Data session cookie).
-# Vernieuwen: browser > F12 > Application > Cookies > earnapp.com > brd_sess_id
-# Vervang ook falcon_id en oauth-refresh-token als nodig.
-# brd_sess_id duurt weken; oauth-refresh-token is long-lived.
+# Refresh: browser > F12 > Application > Cookies > earnapp.com > brd_sess_id
+# Also replace falcon_id and oauth-refresh-token if needed.
+# brd_sess_id lasts weeks; oauth-refresh-token is long-lived.
 
 
 class EarnAppCollector(BaseCollector):
@@ -31,7 +31,7 @@ class EarnAppCollector(BaseCollector):
     async def collect(self) -> EarningsResult:
         if not self.brd_sess_id:
             return EarningsResult(self.platform, 0,
-                error="EARNAPP_BRD_SESS_ID not set — haal op via F12 > Cookies > earnapp.com > brd_sess_id")
+                error="EARNAPP_BRD_SESS_ID not set — get it from F12 > Cookies > earnapp.com > brd_sess_id")
 
         try:
             async with httpx.AsyncClient() as client:
