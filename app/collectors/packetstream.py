@@ -4,9 +4,9 @@ import os
 import httpx
 from .base import BaseCollector, EarningsResult
 
-# PacketStream auth: JWT uit `auth` cookie (app.packetstream.io).
-# Refresh: F12 > Cookies > auth. JWT bevat geen expiry — waarschijnlijk long-lived.
-# Balance + reportData zitten ingebakken in dashboard HTML (server-side rendered).
+# PacketStream auth: JWT from `auth` cookie (app.packetstream.io).
+# Refresh: F12 > Cookies > auth. JWT appears to have no expiry — probably long-lived.
+# Balance + reportData are embedded in the dashboard HTML (server-side rendered).
 
 BASE = "https://app.packetstream.io"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0"}
@@ -22,16 +22,17 @@ class PacketStreamCollector(BaseCollector):
         self.password = os.getenv("PACKETSTREAM_PASSWORD", "")
 
     async def _login(self, client: httpx.AsyncClient) -> bool:
-        """Login via form POST, sla JWT op uit auth cookie."""
+        """Login via form POST, store JWT from auth cookie."""
         if not self.email or not self.password:
             return False
         try:
-            # Haal CSRF token op
+            # Get CSRF token from hidden form field
             r = await client.get(f"{BASE}/login", headers=HEADERS, timeout=15)
-            csrf = r.cookies.get("_csrf", "")
+            m = re.search(r'name=csrf\s+value=([^\s>]+)', r.text)
+            csrf = m.group(1) if m else ""
             r2 = await client.post(
                 f"{BASE}/login",
-                data={"username": self.email, "password": self.password, "_csrf": csrf},
+                data={"username": self.email, "password": self.password, "csrf": csrf},
                 headers={**HEADERS, "Content-Type": "application/x-www-form-urlencoded",
                          "Referer": f"{BASE}/login"},
                 follow_redirects=True,
@@ -60,7 +61,7 @@ class PacketStreamCollector(BaseCollector):
 
             html = r.text
 
-            # Probeer balance direct uit HTML te halen (server-rendered)
+            # Try to extract balance directly from HTML (server-rendered)
             # Patroon: window.userData = {...} of data-balance="0.05"
             balance = 0.0
             for pattern in [
@@ -101,22 +102,25 @@ class PacketStreamCollector(BaseCollector):
             return None
 
     async def collect(self) -> EarningsResult:
-        if not self.jwt:
+        if not self.jwt and not (self.email and self.password):
             return EarningsResult(self.platform, 0,
-                error="PACKETSTREAM_JWT not set — haal op via F12 > Cookies > app.packetstream.io > auth")
+                error="Set PACKETSTREAM_EMAIL + PACKETSTREAM_PASSWORD, or PACKETSTREAM_JWT")
 
         try:
             async with httpx.AsyncClient() as client:
-                result = await self._scrape_balance(client)
+                # Try JWT first if available
+                result = None
+                if self.jwt:
+                    result = await self._scrape_balance(client)
 
-                if result is None:
-                    # JWT verlopen — probeer auto-login
+                # If no JWT or JWT expired, try email/password login
+                if result is None and self.email and self.password:
                     if await self._login(client):
                         result = await self._scrape_balance(client)
 
                 if result is None:
                     return EarningsResult(self.platform, 0,
-                        error="Dashboard ophalen mislukt — vernieuw PACKETSTREAM_JWT via F12 > Cookies")
+                        error="Login requires CAPTCHA — set PACKETSTREAM_JWT from browser (F12 > Cookies > auth)")
 
                 balance, uploaded = result
                 return EarningsResult(self.platform, balance, bytes_uploaded=uploaded)
