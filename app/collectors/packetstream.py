@@ -4,9 +4,9 @@ import os
 import httpx
 from .base import BaseCollector, EarningsResult
 
-# PacketStream auth: JWT uit `auth` cookie (app.packetstream.io).
-# Refresh: F12 > Cookies > auth. JWT bevat geen expiry — waarschijnlijk long-lived.
-# Balance + reportData zitten ingebakken in dashboard HTML (server-side rendered).
+# PacketStream auth: JWT from `auth` cookie (app.packetstream.io).
+# Refresh: F12 > Cookies > auth. JWT appears to have no expiry — probably long-lived.
+# Balance + reportData are embedded in the dashboard HTML (server-side rendered).
 
 BASE = "https://app.packetstream.io"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0"}
@@ -61,7 +61,7 @@ class PacketStreamCollector(BaseCollector):
 
             html = r.text
 
-            # Probeer balance direct uit HTML te halen (server-rendered)
+            # Try to extract balance directly from HTML (server-rendered)
             # Patroon: window.userData = {...} of data-balance="0.05"
             balance = 0.0
             for pattern in [
