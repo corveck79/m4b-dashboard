@@ -76,6 +76,6 @@ class TraffmonetizerCollector(BaseCollector):
                         return result
 
                 return EarningsResult(self.platform, 0,
-                    error="JWT expired en auto-login mislukt (reCAPTCHA) — update TRAFFMONETIZER_JWT in .env via F12 > Local Storage > app.traffmonetizer.com > token")
+                    error="JWT expired and auto-login failed (reCAPTCHA) — update TRAFFMONETIZER_JWT via F12 > Local Storage > app.traffmonetizer.com > token")
         except Exception as e:
             return EarningsResult(self.platform, 0, error=str(e))

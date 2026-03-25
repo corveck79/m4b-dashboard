@@ -16,6 +16,7 @@ CONTAINER_MAP = {
     "earnfm": os.getenv("CONTAINER_EARNFM", "earnfm"),
     "proxyrack": os.getenv("CONTAINER_PROXYRACK", "proxyrack"),
     "bitping": os.getenv("CONTAINER_BITPING", "bitping"),
+    "mysterium": os.getenv("CONTAINER_MYSTERIUM", "myst"),
 }
 
 _executor = ThreadPoolExecutor(max_workers=2)

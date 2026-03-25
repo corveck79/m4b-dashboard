@@ -1,6 +1,6 @@
 import aiosqlite
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 DB_PATH = os.getenv("DB_PATH", "/data/m4b_dashboard.db")
 
@@ -111,28 +111,30 @@ async def insert_container_status(platform: str, container_name: str, status: st
 async def get_earnings_history(period: str = "week") -> list[dict]:
     """Returns earnings per platform per day for the given period (day/week/month)."""
     period_days = {"day": 1, "week": 7, "month": 30}.get(period, 7)
+    since = (date.today() - timedelta(days=period_days)).isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("""
             SELECT platform, date, balance, daily_delta, currency
             FROM earnings
-            WHERE date >= date('now', ?)
+            WHERE date >= ?
             ORDER BY date ASC, platform ASC
-        """, (f"-{period_days} days",)) as cursor:
+        """, (since,)) as cursor:
             rows = await cursor.fetchall()
     return [dict(r) for r in rows]
 
 
 async def get_bandwidth_history(period: str = "week") -> list[dict]:
     period_days = {"day": 1, "week": 7, "month": 30}.get(period, 7)
+    since = (date.today() - timedelta(days=period_days)).isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("""
             SELECT platform, date, bytes_uploaded, bytes_downloaded
             FROM bandwidth
-            WHERE date >= date('now', ?)
+            WHERE date >= ?
             ORDER BY date ASC, platform ASC
-        """, (f"-{period_days} days",)) as cursor:
+        """, (since,)) as cursor:
             rows = await cursor.fetchall()
     return [dict(r) for r in rows]
 
