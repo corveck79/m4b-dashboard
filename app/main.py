@@ -30,8 +30,8 @@ _last_collect_time: str = "never"
 
 async def run_collection():
     global _last_collect_time
-    from datetime import datetime
-    _last_collect_time = datetime.now().strftime("%Y-%m-%d %H:%M %Z")
+    import time
+    _last_collect_time = time.strftime("%Y-%m-%d %H:%M %Z")
     logger.info("Running data collection...")
 
     # Earnings & bandwidth from all platforms
