@@ -22,7 +22,7 @@ class PacketStreamCollector(BaseCollector):
         self.password = os.getenv("PACKETSTREAM_PASSWORD", "")
 
     async def _login(self, client: httpx.AsyncClient) -> bool:
-        """Login via form POST, sla JWT op uit auth cookie."""
+        """Login via form POST, store JWT from auth cookie."""
         if not self.email or not self.password:
             return False
         try:

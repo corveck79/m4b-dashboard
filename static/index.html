@@ -233,7 +233,7 @@
     </div>
     <div class="settings-footer">
       <div class="settings-toast" id="settingsToast"></div>
-      <button class="settings-save" id="settingsSaveBtn" onclick="saveSettings()">Opslaan</button>
+      <button class="settings-save" id="settingsSaveBtn" onclick="saveSettings()">Save</button>
     </div>
   </div>
 </div>
@@ -379,7 +379,7 @@ function buildBandwidthChart(rows) {
   const canvas = document.getElementById('bandwidthChart');
   const wrap = canvas.parentElement;
 
-  // Verwijder eventueel oud "geen data" bericht
+  // Remove old "no data" message if present
   const existing = wrap.querySelector('.no-data-msg');
   if (existing) existing.remove();
   canvas.style.display = '';
@@ -389,7 +389,7 @@ function buildBandwidthChart(rows) {
     const msg = document.createElement('div');
     msg.className = 'no-data-msg';
     msg.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;flex-direction:column;gap:6px;';
-    msg.innerHTML = '<span style="font-size:24px">📡</span><span>Nog geen bandwidth data</span><span style="font-size:11px">Verschijnt na succesvolle collectie</span>';
+    msg.innerHTML = '<span style="font-size:24px">📡</span><span>No bandwidth data yet</span><span style="font-size:11px">Will appear after a successful collection</span>';
     wrap.appendChild(msg);
     return;
   }
@@ -398,7 +398,7 @@ function buildBandwidthChart(rows) {
   const byPlatform = groupByPlatformDate(rows);
   const platforms = Object.keys(byPlatform);
 
-  // Bepaal eenheid (MB of GB)
+  // Determine unit (MB or GB)
   const totalBytes = rows.reduce((s, r) => s + (r.bytes_uploaded || 0) + (r.bytes_downloaded || 0), 0);
   const useGB = totalBytes > 1073741824; // > 1 GB
   const divisor = useGB ? 1073741824 : 1048576;
@@ -545,8 +545,8 @@ const SETTINGS_PLATFORMS = [
     color: '#f39c12',
     fields: [
       { key: 'HONEYGAIN_EMAIL',    label: 'Email',          type: 'email',    hint: '' },
-      { key: 'HONEYGAIN_PASSWORD', label: 'Wachtwoord',     type: 'password', hint: '' },
-      { key: 'CONTAINER_HONEYGAIN',label: 'Container naam', type: 'text',     hint: 'Naam van de Docker container (bijv. MIES_NAS_honeygain)' },
+      { key: 'HONEYGAIN_PASSWORD', label: 'Password',     type: 'password', hint: '' },
+      { key: 'CONTAINER_HONEYGAIN',label: 'Container name', type: 'text',     hint: 'Docker container name (e.g. m4b-watchtower-honeygain)' },
     ],
   },
   {
@@ -555,11 +555,11 @@ const SETTINGS_PLATFORMS = [
     color: '#3498db',
     fields: [
       { key: 'EARNAPP_BRD_SESS_ID',         label: 'BRD Session ID', type: 'text', token: true,
-        hint: '&#128203; <strong>Hoe vinden:</strong> F12 &rarr; Application &rarr; Cookies &rarr; earnapp.com &rarr; <code>brd_sess_id</code>. Verloopt na weken.' },
+        hint: '&#128203; <strong>How to find:</strong> F12 &rarr; Application &rarr; Cookies &rarr; earnapp.com &rarr; <code>brd_sess_id</code>. Expires after weeks.' },
       { key: 'EARNAPP_FALCON_ID',            label: 'Falcon ID',          type: 'text', hint: '' },
       { key: 'EARNAPP_OAUTH_REFRESH_TOKEN',  label: 'OAuth Refresh Token', type: 'text',
-        hint: '&#128203; <strong>Hoe vinden:</strong> F12 &rarr; Application &rarr; Cookies &rarr; earnapp.com &rarr; <code>oauth-refresh-token</code>' },
-      { key: 'CONTAINER_EARNAPP', label: 'Container naam', type: 'text', hint: '' },
+        hint: '&#128203; <strong>How to find:</strong> F12 &rarr; Application &rarr; Cookies &rarr; earnapp.com &rarr; <code>oauth-refresh-token</code>' },
+      { key: 'CONTAINER_EARNAPP', label: 'Container name', type: 'text', hint: '' },
     ],
   },
   {
@@ -568,8 +568,8 @@ const SETTINGS_PLATFORMS = [
     color: '#9b59b6',
     fields: [
       { key: 'IPROYAL_EMAIL',    label: 'Email',          type: 'email',    hint: '' },
-      { key: 'IPROYAL_PASSWORD', label: 'Wachtwoord',     type: 'password', hint: '' },
-      { key: 'CONTAINER_IPROYAL',label: 'Container naam', type: 'text',     hint: '' },
+      { key: 'IPROYAL_PASSWORD', label: 'Password',     type: 'password', hint: '' },
+      { key: 'CONTAINER_IPROYAL',label: 'Container name', type: 'text',     hint: '' },
     ],
   },
   {
@@ -578,11 +578,11 @@ const SETTINGS_PLATFORMS = [
     color: '#1abc9c',
     fields: [
       { key: 'PACKETSTREAM_JWT', label: 'Auth JWT (Cookie)', type: 'text', token: true,
-        hint: '&#128203; <strong>Hoe vinden:</strong> F12 &rarr; Application &rarr; Cookies &rarr; app.packetstream.io &rarr; <code>auth</code>. Lijkt geen expiry te hebben.' },
+        hint: '&#128203; <strong>How to find:</strong> F12 &rarr; Application &rarr; Cookies &rarr; app.packetstream.io &rarr; <code>auth</code>. Appears to have no expiry.' },
       { key: 'PACKETSTREAM_CID',      label: 'CID',            type: 'text',     hint: '' },
       { key: 'PACKETSTREAM_EMAIL',    label: 'Email',          type: 'email',    hint: '' },
-      { key: 'PACKETSTREAM_PASSWORD', label: 'Wachtwoord',     type: 'password', hint: '' },
-      { key: 'CONTAINER_PACKETSTREAM',label: 'Container naam', type: 'text',     hint: '' },
+      { key: 'PACKETSTREAM_PASSWORD', label: 'Password',     type: 'password', hint: '' },
+      { key: 'CONTAINER_PACKETSTREAM',label: 'Container name', type: 'text',     hint: '' },
     ],
   },
   {
@@ -591,10 +591,10 @@ const SETTINGS_PLATFORMS = [
     color: '#e74c3c',
     fields: [
       { key: 'TRAFFMONETIZER_JWT', label: 'JWT Token', type: 'text', token: true,
-        hint: '&#128203; <strong>Hoe vinden:</strong> F12 &rarr; Application &rarr; Local Storage &rarr; app.traffmonetizer.com &rarr; <code>token</code>. Verloopt na ~7 dagen.' },
+        hint: '&#128203; <strong>How to find:</strong> F12 &rarr; Application &rarr; Local Storage &rarr; app.traffmonetizer.com &rarr; <code>token</code>. Expires after ~7 days.' },
       { key: 'TRAFFMONETIZER_EMAIL',    label: 'Email',          type: 'email',    hint: '' },
-      { key: 'TRAFFMONETIZER_PASSWORD', label: 'Wachtwoord',     type: 'password', hint: '' },
-      { key: 'CONTAINER_TRAFFMONETIZER',label: 'Container naam', type: 'text',     hint: '' },
+      { key: 'TRAFFMONETIZER_PASSWORD', label: 'Password',     type: 'password', hint: '' },
+      { key: 'CONTAINER_TRAFFMONETIZER',label: 'Container name', type: 'text',     hint: '' },
     ],
   },
   {
@@ -603,8 +603,8 @@ const SETTINGS_PLATFORMS = [
     color: '#27ae60',
     fields: [
       { key: 'REPOCKET_EMAIL',    label: 'Email',       type: 'email',    hint: '' },
-      { key: 'REPOCKET_PASSWORD', label: 'Wachtwoord',  type: 'password', hint: 'Repocket account wachtwoord (token wordt automatisch ververst)' },
-      { key: 'CONTAINER_REPOCKET', label: 'Container naam', type: 'text', hint: 'Naam van de Docker container (bijv. MIES_NAS_repocket)' },
+      { key: 'REPOCKET_PASSWORD', label: 'Password',  type: 'password', hint: 'Repocket account password (token is refreshed automatically)' },
+      { key: 'CONTAINER_REPOCKET', label: 'Container name', type: 'text', hint: 'Docker container name (e.g. m4b-watchtower-repocket)' },
     ],
   },
   {
@@ -613,8 +613,8 @@ const SETTINGS_PLATFORMS = [
     color: '#e67e22',
     fields: [
       { key: 'EARNFM_API_KEY', label: 'API Key', type: 'text',
-        hint: '&#128203; <strong>Hoe vinden:</strong> Inloggen op <a href="https://earnfm.com" target="_blank" style="color:var(--accent)">earnfm.com</a> &rarr; Account &rarr; API Key.' },
-      { key: 'CONTAINER_EARNFM', label: 'Container naam', type: 'text', hint: 'Bijv. MIES_NAS_earnfm' },
+        hint: '&#128203; <strong>How to find:</strong> Log in to <a href="https://earnfm.com" target="_blank" style="color:var(--accent)">earnfm.com</a> &rarr; Account &rarr; API Key.' },
+      { key: 'CONTAINER_EARNFM', label: 'Container name', type: 'text', hint: 'e.g. m4b-watchtower-earnfm' },
     ],
   },
   {
@@ -623,9 +623,9 @@ const SETTINGS_PLATFORMS = [
     color: '#8e44ad',
     fields: [
       { key: 'PROXYRACK_API_KEY', label: 'API Key', type: 'text',
-        hint: '&#128203; <strong>Hoe vinden:</strong> Inloggen op <a href="https://peer.proxyrack.com" target="_blank" style="color:var(--accent)">peer.proxyrack.com</a> &rarr; API.' },
-      { key: 'PROXYRACK_UUID', label: 'Device UUID', type: 'text', hint: 'Unieke device identifier (automatisch gegenereerd door M4B).' },
-      { key: 'CONTAINER_PROXYRACK', label: 'Container naam', type: 'text', hint: 'Bijv. MIES_NAS_proxyrack' },
+        hint: '&#128203; <strong>How to find:</strong> Log in to <a href="https://peer.proxyrack.com" target="_blank" style="color:var(--accent)">peer.proxyrack.com</a> &rarr; API.' },
+      { key: 'PROXYRACK_UUID', label: 'Device UUID', type: 'text', hint: 'Unique device identifier (auto-generated by M4B).' },
+      { key: 'CONTAINER_PROXYRACK', label: 'Container name', type: 'text', hint: 'e.g. m4b-watchtower-proxyrack' },
     ],
   },
   {
@@ -634,18 +634,18 @@ const SETTINGS_PLATFORMS = [
     color: '#16a085',
     fields: [
       { key: 'BITPING_EMAIL',    label: 'Email',      type: 'email',    hint: '' },
-      { key: 'BITPING_PASSWORD', label: 'Wachtwoord', type: 'password', hint: '' },
-      { key: 'CONTAINER_BITPING', label: 'Container naam', type: 'text', hint: 'Bijv. MIES_NAS_bitping' },
+      { key: 'BITPING_PASSWORD', label: 'Password', type: 'password', hint: '' },
+      { key: 'CONTAINER_BITPING', label: 'Container name', type: 'text', hint: 'e.g. m4b-watchtower-bitping' },
     ],
   },
 ];
 
 const SETTINGS_GENERAL = {
   id: 'general',
-  label: 'Algemeen',
+  label: 'General',
   fields: [
-    { key: 'COLLECT_INTERVAL_MINUTES', label: 'Collect interval (minuten)', type: 'number',
-      hint: 'Hoe vaak data opgehaald wordt. Herstart container na wijziging.' },
+    { key: 'COLLECT_INTERVAL_MINUTES', label: 'Collect interval (minutes)', type: 'number',
+      hint: 'How often data is collected. Restart container after changes.' },
   ],
 };
 
@@ -661,7 +661,7 @@ async function openSettings() {
     const r = await fetch('/api/settings');
     _settingsData = await r.json();
   } catch (e) {
-    showSettingsToast('Fout bij laden: ' + e.message, true);
+    showSettingsToast('Error loading: ' + e.message, true);
   }
 
   renderSidebar();
@@ -687,7 +687,7 @@ function renderSidebar() {
     <div class="settings-sidebar-item ${_activePlatform === 'general' ? 'active' : ''}"
          onclick="selectPlatform('general')" id="sidebarItem-general">
       <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0"></span>
-      Algemeen
+      General
     </div>
   `;
 }
@@ -719,7 +719,7 @@ function renderField(f) {
   const inputType = isPassword ? 'password' : (f.type === 'number' ? 'number' : 'text');
   const mono = (f.type === 'text' && !f.key.includes('CONTAINER') && !f.key.includes('CID')) ? '' : 'class="normal"';
   const toggleBtn = isPassword
-    ? `<button class="toggle-pw" type="button" onclick="togglePw('${f.key}')" title="Toon/verberg">&#128065;</button>`
+    ? `<button class="toggle-pw" type="button" onclick="togglePw('${f.key}')" title="Show/hide">&#128065;</button>`
     : '';
   const hint = f.hint ? `<div class="field-hint">${f.hint}</div>` : '';
 
@@ -757,15 +757,15 @@ async function saveSettings() {
       body: JSON.stringify(payload),
     });
     if (r.ok) {
-      showSettingsToast('&#10003; Opgeslagen!', false);
+      showSettingsToast('&#10003; Saved!', false);
       // Update local cache
       Object.assign(_settingsData, payload);
     } else {
       const t = await r.text();
-      showSettingsToast('Fout: ' + t.slice(0, 80), true);
+      showSettingsToast('Error: ' + t.slice(0, 80), true);
     }
   } catch (e) {
-    showSettingsToast('Netwerkfout: ' + e.message, true);
+    showSettingsToast('Network error: ' + e.message, true);
   }
   btn.disabled = false;
 }
